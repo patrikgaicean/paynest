@@ -10,11 +10,11 @@ services:
     volumes:
       - .:/app
     environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: paynest
-      POSTGRES_USER: someuser
-      POSTGRES_PASSWORD: somepassword
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       - postgres
 
@@ -24,6 +24,6 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: paynest
-      POSTGRES_USER: someuser
-      POSTGRES_PASSWORD: somepassword
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
