@@ -12,7 +12,7 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async findOne(email: string): Promise<any> {
+  async findOne(email: string): Promise<User> {
     return this.usersRepository.findOne({ where: { email: email } });
   }
 

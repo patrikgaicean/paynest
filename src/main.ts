@@ -8,8 +8,8 @@ async function bootstrap() {
   dotenv.config();
 
   const app = await NestFactory.create(AppModule);
-  const config = app.get(ConfigService);
-  const port = config.get('PORT');
+  const config = app.get<ConfigService>(ConfigService);
+  const port = config.get<number>('PORT');
 
   app.useGlobalPipes(new ValidationPipe());
 
