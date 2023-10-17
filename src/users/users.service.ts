@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SignUpDto } from 'src/auth/dto/sign-up.dto';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
-import PostgresErrorCodes from 'src/database/postgresErrorCodes.enum';
+import PostgresErrorCodes from '../database/postgresErrorCodes.enum';
 
 @Injectable()
 export class UsersService {
@@ -11,6 +11,10 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
   ) {}
+
+  async findOne(email: string): Promise<any> {
+    return this.usersRepository.findOne({ where: { email: email } });
+  }
 
   async createUser(signUpDto: SignUpDto) {
     const entity = this.usersRepository.create(signUpDto)
