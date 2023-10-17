@@ -1,4 +1,4 @@
 export class UpdateTransactionDto {
-    status: string
-    consent: boolean
+  status: string;
+  consent: boolean;
 }
