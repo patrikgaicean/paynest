@@ -1,4 +1,14 @@
+import { IsEmail, IsStrongPassword } from "class-validator";
+
 export class SignUpDto {
+  @IsEmail()
   email: string;
-  password: string; // 3 numbers, 3 lowercase, 2 upper, one special char
+
+  @IsStrongPassword({
+    minNumbers: 3,
+    minLowercase: 3,
+    minUppercase: 2,
+    minSymbols: 1,
+  })
+  password: string;
 }
