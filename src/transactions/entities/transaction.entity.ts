@@ -1,5 +1,4 @@
-import { User } from "../../users/entities/user.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { TransactionType } from "../dto/interfaces";
 
 @Entity('transactions')
@@ -9,6 +8,9 @@ export class Transaction {
 
   @Column({ type: 'enum', enum: TransactionType })
   status: TransactionType;
+
+  @Column({ nullable: true })
+  consent: boolean | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
