@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SignUpDto } from 'src/auth/dto/sign-up.dto';
+import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import PostgresErrorCodes from '../database/postgresErrorCodes.enum';
