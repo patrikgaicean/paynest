@@ -3,7 +3,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { DeleteTransactionDto } from './dto/delete-transaction.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Not, Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { TransactionStatus, TransactionType } from './dto/interfaces';
 import { User } from '../users/entities/user.entity';
@@ -59,12 +59,44 @@ export class TransactionsService {
       }
 
       case TransactionType.transfer: {
+        const pendingTransactions = await this.transactionsRepository.findOne({
+          where: {
+            senderId: createTransactionDto.senderId,
+            status: TransactionStatus.pending,
+          },
+        });
+  
+        if (pendingTransactions !== null) {
+          throw new BadRequestException(`Cannot initialize a new transaction. Sender with id ${createTransactionDto.senderId} has a transaction 'pending'.`);
+        }
+  
+        const twentyFourHoursAgo = new Date();
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+  
+        const recentTransfers = await this.transactionsRepository.find({
+          where: {
+            type: TransactionType.transfer,
+            status: TransactionStatus.succeeded,
+            senderId: createTransactionDto.senderId,
+            created_at: MoreThan(twentyFourHoursAgo),
+            receiverId: Not(createTransactionDto.senderId),
+          },
+        });
+  
+        const transfersLast24Hours = recentTransfers.reduce((total, transaction) => {
+          return total.plus(transaction.amount);
+        }, new Decimal(createTransactionDto.amount));
+  
+        if (recentTransfers.length >= 5 || transfersLast24Hours.greaterThan(100000)) {
+          throw new BadRequestException(`Transaction limits exceeded.`);
+        }
+  
         const receiver = await this.usersRepository.findOne({ where: { user_id: createTransactionDto.receiverId }});
-
+  
         if (!receiver) {
           throw new NotFoundException(`Invalid receiver id ${createTransactionDto.receiverId}.`);
         }
-
+  
         newTransaction = this.transactionsRepository.create({
           ...createTransactionDto,
           senderId: createTransactionDto.senderId,
@@ -72,10 +104,10 @@ export class TransactionsService {
           status: TransactionStatus.pending,
         });
   
-        if (new Decimal(createTransactionDto.amount).gt(sender.balance)) {
+        if (new Decimal(createTransactionDto.amount).greaterThan(sender.balance)) {
           throw new BadRequestException(`Insufficient balance for transfer.`);
         }
-
+  
         sender.balance = new Decimal(sender.balance).minus(createTransactionDto.amount);
         break;
       }
