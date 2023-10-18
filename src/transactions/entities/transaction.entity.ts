@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { TransactionType } from "../dto/interfaces";
+import { TransactionStatus, TransactionType } from "../dto/interfaces";
 
 @Entity('transactions')
 export class Transaction {
@@ -7,7 +7,10 @@ export class Transaction {
   transaction_id: number;
 
   @Column({ type: 'enum', enum: TransactionType })
-  status: TransactionType;
+  type: TransactionType;
+
+  @Column({ type: 'enum', enum: TransactionStatus })
+  status: TransactionStatus;
 
   @Column({ nullable: true })
   consent: boolean | null;
