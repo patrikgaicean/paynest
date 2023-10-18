@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Transaction } from '../../transactions/entities/transaction.entity';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 
 @Entity('users')
 export class User {
@@ -13,4 +14,10 @@ export class User {
 
   @Column({ default: 0 })
   balance: number;
+
+  @OneToMany(() => Transaction, (transaction) => transaction.sender)
+  sentTransactions: Transaction[];
+
+  @OneToMany(() => Transaction, (transaction) => transaction.receiver)
+  receivedTransactions: Transaction[];
 }
