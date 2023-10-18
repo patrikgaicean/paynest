@@ -24,6 +24,12 @@ export class CreateTransactionDto {
   receiverId: number;
 
   @ApiProperty({
+    description: "Account id of sender.",
+    example: 12,
+  })
+  senderId: number; // TODO: get it out of JWT. included for now for testing
+
+  @ApiProperty({
     description: "Amount to be transfered (up to $100000 per day or $5000 for top-up)",
     example: 200,
   })

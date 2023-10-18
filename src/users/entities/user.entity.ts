@@ -1,3 +1,6 @@
+import { Transform } from 'class-transformer';
+import Decimal from 'decimal.js';
+import { DecimalToString, DecimalTransformer } from '../../transformers/decimal.transformer';
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('users')
@@ -11,6 +14,7 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ default: 0 })
-  balance: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, transformer: new DecimalTransformer() })
+  @Transform(({ value }) => DecimalToString(2)(value), { toPlainOnly: true })
+  balance: Decimal;
 }

@@ -1,5 +1,8 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { TransactionStatus, TransactionType } from "../dto/interfaces";
+import Decimal from "decimal.js";
+import { Transform } from "class-transformer";
+import { DecimalToString, DecimalTransformer } from "../../transformers/decimal.transformer";
 
 @Entity('transactions')
 export class Transaction {
@@ -15,8 +18,9 @@ export class Transaction {
   @Column({ nullable: true })
   consent: boolean | null;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  amount: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0, transformer: new DecimalTransformer() })
+  @Transform(({ value }) => DecimalToString(2)(value), { toPlainOnly: true })
+  amount: Decimal;
 
   @CreateDateColumn()
   created_at: Date;
