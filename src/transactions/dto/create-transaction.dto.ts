@@ -1,43 +1,32 @@
-import { IsEnum, IsNotEmpty, IsNumber, Min, ValidateIf, ValidationArguments, ValidationOptions, ValidatorConstraint, ValidatorConstraintInterface, registerDecorator } from "class-validator";
+import { IsEnum, IsNotEmpty, IsNumber, Min, ValidateIf } from "class-validator";
 import { TransactionType } from "./interfaces";
-
-@ValidatorConstraint({ name: "maxAmount", async: false })
-export class MaxAmountValidator implements ValidatorConstraintInterface {
-  validate(value: number, args: ValidationArguments) {
-    const { object } = args;
-
-    if ((object as CreateTransactionDto).type === TransactionType.transfer) {
-      return value <= 5000;
-    } else {
-      return value <= 100_000;
-    }
-  }
-}
-
-export function MaxAmount(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
-    registerDecorator({
-      target: object.constructor,
-      propertyName: propertyName,
-      options: validationOptions,
-      constraints: [],
-      validator: MaxAmountValidator,
-    });
-  };
-}
+import { ApiProperty } from "@nestjs/swagger";
+import { MaxAmount } from "src/validators/maxAmount.validator";
 
 export class CreateTransactionDto {
+  @ApiProperty({
+    enum: TransactionType,
+    description: "Transaction type. Must be 'topup' or 'transfer'.",
+  })
   @IsEnum(TransactionType, {
     message: "Invalid transaction type. Must be 'topup' or 'transfer'.",
   })
   @IsNotEmpty()
   type: TransactionType;
 
+  @ApiProperty({
+    description: "Account id of the receiver in case of transfer transaction type.",
+    example: 123,
+  })
   @ValidateIf((t: CreateTransactionDto) => t.type === TransactionType.transfer )
   @IsNumber()
   @Min(1)
-  accountId?: number;
+  receiverId?: number;
 
+  @ApiProperty({
+    description: "Amount to be transfered (up to $100000 per day or $5000 for top-up)",
+    example: 200,
+  })
   @Min(1)
   @MaxAmount() // 5000 for top-ups, 100_000 for transfers
   amount: number;
