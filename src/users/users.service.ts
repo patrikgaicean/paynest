@@ -17,15 +17,19 @@ export class UsersService {
   }
 
   async createUser(signUpDto: SignUpDto) {
-    const entity = this.usersRepository.create(signUpDto)
+    const user = this.usersRepository.create(signUpDto)
     try {
-      await this.usersRepository.save(entity);
+      const {
+        password,
+        ...details
+      } = await this.usersRepository.save(user);
+
+      return details;
     } catch (err) {
       if (err?.code === PostgresErrorCodes.UniqueViolation) {
         throw new HttpException('Already exists', HttpStatus.BAD_REQUEST);
       }
       throw new HttpException('Something went wrong', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    return 'create user hit';
   }
 }
