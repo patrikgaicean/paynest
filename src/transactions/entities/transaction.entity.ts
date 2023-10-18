@@ -16,11 +16,9 @@ export class Transaction {
   @CreateDateColumn()
   created_at: Date;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'sender_id' })
-  sender: User;
+  @Column({ name: 'sender_id' })
+  senderId: number;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'receiver_id' })
-  receiver: User;
+  @Column({ name: 'receiver_id' })
+  receiverId: number;
 }

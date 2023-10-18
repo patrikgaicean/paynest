@@ -14,10 +14,4 @@ export class User {
 
   @Column({ default: 0 })
   balance: number;
-
-  @OneToMany(() => Transaction, (transaction) => transaction.sender)
-  sentTransactions: Transaction[];
-
-  @OneToMany(() => Transaction, (transaction) => transaction.receiver)
-  receivedTransactions: Transaction[];
 }
