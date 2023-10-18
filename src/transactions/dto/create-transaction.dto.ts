@@ -1,7 +1,7 @@
 import { IsEnum, IsNotEmpty, IsNumber, Min, ValidateIf } from "class-validator";
 import { TransactionType } from "./interfaces";
 import { ApiProperty } from "@nestjs/swagger";
-import { MaxAmount } from "src/validators/maxAmount.validator";
+import { MaxAmount } from "../../validators/maxAmount.validator";
 
 export class CreateTransactionDto {
   @ApiProperty({
@@ -21,7 +21,7 @@ export class CreateTransactionDto {
   @ValidateIf((t: CreateTransactionDto) => t.type === TransactionType.transfer )
   @IsNumber()
   @Min(1)
-  receiverId?: number;
+  receiverId: number;
 
   @ApiProperty({
     description: "Amount to be transfered (up to $100000 per day or $5000 for top-up)",
