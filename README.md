@@ -41,6 +41,8 @@ $ docker compose up -d
 
 ## Development and testing
 
+Swagger API docs are provided at: <a>http://localhost:${PORT}/docs</a>
+
 A couple of users are seeded to the development database. In order to run the script
 to populate these users you MUST have the environment variable ENV=dev.
 
