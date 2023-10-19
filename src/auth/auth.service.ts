@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { SignUpDto } from './dto/sign-up.dto';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcryptjs';
@@ -20,18 +20,22 @@ export class AuthService {
     });
   }
 
-  async signIn(signInDto: SignUpDto) {
+  async signIn(user: any) {
+    const payload = { sub: user.user_id, email: user.email };
+    return {
+      access_token: await this.jwtService.signAsync(payload)
+    }
+  }
+
+  async validateUser(email: string, password: string) {
     const {
       password: hashedPassword,
       ...user
-    } = await this.usersService.findOne(signInDto.email);
+    } = await this.usersService.findOne(email);
 
-    await this.verifyPassword(signInDto.password, hashedPassword);
+    await this.verifyPassword(password, hashedPassword);
 
-    const payload = { sub: user.user_id, email: user.email }
-    return {
-      acess_token: await this.jwtService.signAsync(payload)
-    }
+    return user;
   }
 
   private async verifyPassword(plainTextPassword: string, hashedPassword: string) {
