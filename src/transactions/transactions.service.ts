@@ -3,7 +3,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { DeleteTransactionDto } from './dto/delete-transaction.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Not, Repository } from 'typeorm';
+import { Brackets, MoreThan, Not, Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { TransactionStatus, TransactionType } from './dto/interfaces';
 import { User } from '../users/entities/user.entity';
@@ -19,14 +19,26 @@ export class TransactionsService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async getAll(): Promise<Transaction[]> { // allow logged in user to see all HIS transactions
-    return this.transactionsRepository.find(); // get from JWT
-    // return this.transactionsRepository.find({ where: { senderId: 123 }}); // get from JWT
+  async getAll(userId: number): Promise<Transaction[]> {
+    return this.transactionsRepository.find({
+      where: [
+        { senderId: userId },
+        { receiverId: userId },
+      ]
+    });
   }
 
-  async getOne(id: number): Promise<Transaction> { // same as above
-    const transaction = await this.transactionsRepository.findOne({ where: { transaction_id: id  }});
-    // const transaction = await this.transactionsRepository.findOne({ where: { transaction_id: id, senderId: 123 }});
+  async getOne(id: number, userId: number): Promise<Transaction> {
+    const transaction = await this.transactionsRepository
+      .createQueryBuilder('transaction')
+      .where('transaction.transaction_id = :transactionId', { transactionId: id })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('transaction.sender_id = :userId', { userId: userId })
+            .orWhere('transaction.receiver_id = :userId', { userId: userId });
+        })
+      )
+      .getOne();
 
     if (!transaction) {
       throw new NotFoundException(`Transaction with id ${id} not found.`);
@@ -35,11 +47,11 @@ export class TransactionsService {
     return transaction;
   }
 
-  async create(createTransactionDto: CreateTransactionDto): Promise<Transaction> {
-    const sender = await this.usersRepository.findOne({ where: { user_id: createTransactionDto.senderId }}); // get from JWT
+  async create(createTransactionDto: CreateTransactionDto, senderId: number): Promise<Transaction> {
+    const sender = await this.usersRepository.findOne({ where: { user_id: senderId }});
 
     if (!sender) {
-      throw new NotFoundException(`Invalid sender id ${createTransactionDto.senderId}.`);
+      throw new NotFoundException(`Invalid sender id ${senderId}.`);
     }
 
     let newTransaction: Transaction;
@@ -48,8 +60,8 @@ export class TransactionsService {
       case TransactionType.topup: {
         newTransaction = this.transactionsRepository.create({
           ...createTransactionDto,
-          senderId: createTransactionDto.senderId,
-          receiverId: createTransactionDto.senderId,
+          senderId: senderId,
+          receiverId: senderId,
           consent: true,
           status: TransactionStatus.succeeded,
         });
@@ -61,13 +73,13 @@ export class TransactionsService {
       case TransactionType.transfer: {
         const pendingTransactions = await this.transactionsRepository.findOne({
           where: {
-            senderId: createTransactionDto.senderId,
+            senderId: senderId,
             status: TransactionStatus.pending,
           },
         });
   
         if (pendingTransactions !== null) {
-          throw new BadRequestException(`Cannot initialize a new transaction. Sender with id ${createTransactionDto.senderId} has a transaction 'pending'.`);
+          throw new BadRequestException(`Cannot initialize a new transaction. Sender with id ${senderId} has a transaction 'pending'.`);
         }
   
         const twentyFourHoursAgo = new Date();
@@ -77,9 +89,9 @@ export class TransactionsService {
           where: {
             type: TransactionType.transfer,
             status: TransactionStatus.succeeded,
-            senderId: createTransactionDto.senderId,
+            senderId: senderId,
             created_at: MoreThan(twentyFourHoursAgo),
-            receiverId: Not(createTransactionDto.senderId),
+            receiverId: Not(senderId),
           },
         });
   
@@ -99,7 +111,7 @@ export class TransactionsService {
   
         newTransaction = this.transactionsRepository.create({
           ...createTransactionDto,
-          senderId: createTransactionDto.senderId,
+          senderId: senderId,
           consent: null,
           status: TransactionStatus.pending,
         });
@@ -120,8 +132,8 @@ export class TransactionsService {
     return this.transactionsRepository.save(newTransaction);
   }
 
-  async update(id: number, updateTransactionDto: UpdateTransactionDto): Promise<Transaction> {
-    const transaction = await this.transactionsRepository.findOne({ where: { transaction_id: id }});
+  async update(id: number, updateTransactionDto: UpdateTransactionDto, receiverId: number): Promise<Transaction> {
+    const transaction = await this.transactionsRepository.findOne({ where: { transaction_id: id, receiverId: receiverId }});
 
     if (!transaction) {
       throw new NotFoundException(`Transaction with id ${id} not found.`);
@@ -133,7 +145,7 @@ export class TransactionsService {
 
     switch (updateTransactionDto.consent) {
       case true: { // update receiver's balance
-        const receiver = await this.usersRepository.findOne({ where: { user_id: transaction.receiverId }});
+        const receiver = await this.usersRepository.findOne({ where: { user_id: receiverId }});
 
         receiver.balance = new Decimal(receiver.balance).plus(transaction.amount);
         await this.usersRepository.save(receiver);
@@ -160,8 +172,8 @@ export class TransactionsService {
     return this.transactionsRepository.save(transaction);
   }
 
-  async delete(id: number, deleteTransactionDto: DeleteTransactionDto): Promise<void> {
-    const transaction = await this.transactionsRepository.findOne({ where: { transaction_id: id }});
+  async delete(id: number, deleteTransactionDto: DeleteTransactionDto, senderId: number): Promise<void> {
+    const transaction = await this.transactionsRepository.findOne({ where: { transaction_id: id, senderId: senderId }});
 
     if (!transaction) {
       throw new NotFoundException(`Transaction with id ${id} not found.`);
@@ -175,7 +187,7 @@ export class TransactionsService {
       throw new BadRequestException(`Transaction amount does not match for confirmation.`);
     }
 
-    const sender = await this.usersRepository.findOne({ where: { user_id: transaction.senderId }}); // get it from jwtttt
+    const sender = await this.usersRepository.findOne({ where: { user_id: senderId }});
   
     sender.balance = new Decimal(sender.balance).plus(transaction.amount);
   
